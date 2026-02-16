@@ -1,40 +1,62 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLocalData } from '../contexts/LocalDataContext';
-import { Bell, TrendingUp, Calendar, ChevronRight, Sparkles, Radio, Users } from 'lucide-react';
+import { Bell, TrendingUp, Calendar, ChevronRight, Sparkles, Radio, Users, AlertCircle } from 'lucide-react';
+import { fetchLatestDraw, fetchAllResults } from '../services/supabase';
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { activeProfile, profiles, setActiveProfile, predictions } = useLocalData();
+  const { activeProfile, profiles, setActiveProfile, generatePredictions } = useLocalData();
   const [alerts, setAlerts] = useState([]);
   const [latestDraw, setLatestDraw] = useState(null);
-
-  // Fetch latest draw from Supabase (public data only)
-  useEffect(() => {
-    fetchLatestDraw();
-  }, []);
+  const [predictions, setPredictions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    if (predictions) {
-      const highProb = predictions.filter(p => p.confidence > 70);
-      setAlerts(highProb);
+    loadData();
+  }, [activeProfile]);
+
+  const loadData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Fetch latest draw and all results
+      const [latest, allResults] = await Promise.all([
+        fetchLatestDraw(),
+        fetchAllResults()
+      ]);
+
+      if (latest) {
+        setLatestDraw(latest);
+      }
+
+      // Generate predictions if we have an active profile
+      if (activeProfile && allResults.length > 0) {
+        const newPredictions = generatePredictions(latest, allResults);
+        setPredictions(newPredictions);
+        
+        // Get high confidence alerts
+        const highProb = newPredictions.filter(p => p.confidence > 70);
+        setAlerts(highProb);
+      }
+    } catch (err) {
+      console.error('Error loading dashboard data:', err);
+      setError('Failed to load data');
+    } finally {
+      setLoading(false);
     }
-  }, [predictions]);
-
-  const fetchLatestDraw = async () => {
-    // This will be replaced with your actual Supabase query
-    // For now, using sample data
-    setLatestDraw({
-      date: new Date().toLocaleDateString('en-MY', { 
-        day: 'numeric', 
-        month: 'short', 
-        year: 'numeric' 
-      }),
-      first: '9651',
-      second: '3688',
-      third: '2645'
-    });
   };
+
+  if (loading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh]">
+        <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
+        <p className="text-gray-500">Loading your dashboard...</p>
+      </div>
+    );
+  }
 
   if (!activeProfile) {
     return (
@@ -47,6 +69,21 @@ const Dashboard = () => {
           className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold"
         >
           Manage Profiles
+        </button>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] px-6">
+        <AlertCircle size={48} className="text-red-400 mb-4" />
+        <p className="text-gray-600 text-center mb-4">{error}</p>
+        <button
+          onClick={loadData}
+          className="bg-blue-600 text-white px-6 py-3 rounded-xl font-medium"
+        >
+          Try Again
         </button>
       </div>
     );
@@ -127,13 +164,19 @@ const Dashboard = () => {
               <Radio size={20} className="text-blue-600" />
               Latest Draw
             </h2>
-            <span className="text-sm text-gray-500">{latestDraw.date}</span>
+            <span className="text-sm text-gray-500">
+              {new Date(latestDraw.draw_date).toLocaleDateString('en-MY', { 
+                day: 'numeric', 
+                month: 'short', 
+                year: 'numeric' 
+              })}
+            </span>
           </div>
           
           <div className="grid grid-cols-3 gap-3">
-            <ResultCard place="1st" number={latestDraw.first} color="yellow" />
-            <ResultCard place="2nd" number={latestDraw.second} color="gray" />
-            <ResultCard place="3rd" number={latestDraw.third} color="orange" />
+            <ResultCard place="1st" number={latestDraw.first_prize} color="yellow" />
+            <ResultCard place="2nd" number={latestDraw.second_prize} color="gray" />
+            <ResultCard place="3rd" number={latestDraw.third_prize} color="orange" />
           </div>
 
           <button
@@ -149,9 +192,10 @@ const Dashboard = () => {
       <div className="grid grid-cols-2 gap-4">
         <StatCard 
           icon={<TrendingUp size={20} className="text-green-600" />}
-          label="Total Numbers"
-          value={activeProfile.birthDates?.length + activeProfile.phoneNumbers?.length + activeProfile.favoriteNumbers?.length || 0}
-          subtext="Personal numbers"
+          label="Personal Numbers"
+          value={Object.values(activeProfile).reduce((acc, val) => 
+            acc + (Array.isArray(val) ? val.length : 0), 0)}
+          subtext="Numbers to analyze"
         />
         <StatCard 
           icon={<Calendar size={20} className="text-blue-600" />}
@@ -162,44 +206,46 @@ const Dashboard = () => {
       </div>
 
       {/* Predictions Preview */}
-      <div className="bg-white rounded-xl p-5 shadow-sm border border-blue-100">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Sparkles size={20} className="text-blue-600" />
-            Your AI Picks
-          </h2>
-          <button 
-            onClick={() => navigate('/predictions')}
-            className="text-blue-600 text-sm flex items-center"
-          >
-            View all <ChevronRight size={16} />
-          </button>
-        </div>
+      {predictions.length > 0 && (
+        <div className="bg-white rounded-xl p-5 shadow-sm border border-blue-100">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Sparkles size={20} className="text-blue-600" />
+              Your AI Picks
+            </h2>
+            <button 
+              onClick={() => navigate('/predictions')}
+              className="text-blue-600 text-sm flex items-center"
+            >
+              View all <ChevronRight size={16} />
+            </button>
+          </div>
 
-        <div className="space-y-3">
-          {predictions?.slice(0, 3).map((pred, index) => (
-            <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-              <div>
-                <span className="text-xl font-mono font-bold">{pred.number}</span>
-                {pred.lastAppearance && (
-                  <p className="text-xs text-gray-500 mt-1">
-                    Last: {new Date(pred.lastAppearance).toLocaleDateString()} 
-                    {pred.prizeCategory && ` • ${pred.prizeCategory}`}
-                  </p>
-                )}
+          <div className="space-y-3">
+            {predictions.slice(0, 3).map((pred, index) => (
+              <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                <div>
+                  <span className="text-xl font-mono font-bold">{pred.number}</span>
+                  {pred.lastAppearance && (
+                    <p className="text-xs text-gray-500 mt-1">
+                      Last: {new Date(pred.lastAppearance).toLocaleDateString()} 
+                      {pred.prizeCategory && ` • ${pred.prizeCategory}`}
+                    </p>
+                  )}
+                </div>
+                <div className="text-right">
+                  <span className={`text-sm font-semibold px-2 py-1 rounded-full
+                    ${pred.confidence > 70 ? 'bg-green-100 text-green-700' : 
+                      pred.confidence > 50 ? 'bg-yellow-100 text-yellow-700' : 
+                      'bg-gray-100 text-gray-700'}`}>
+                    {pred.confidence}%
+                  </span>
+                </div>
               </div>
-              <div className="text-right">
-                <span className={`text-sm font-semibold px-2 py-1 rounded-full
-                  ${pred.confidence > 70 ? 'bg-green-100 text-green-700' : 
-                    pred.confidence > 50 ? 'bg-yellow-100 text-yellow-700' : 
-                    'bg-gray-100 text-gray-700'}`}>
-                  {pred.confidence}%
-                </span>
-              </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 };
