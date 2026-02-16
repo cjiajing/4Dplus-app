@@ -55,8 +55,16 @@ export const LocalDataProvider = ({ children }) => {
       name: profileData.name || `Profile ${profiles.length + 1}`
     };
     
-    setProfiles(prev => [...prev, newProfile]);
-    setActiveProfile(newProfile);
+    setProfiles(prev => {
+      const updated = [...prev, newProfile];
+      return updated;
+    });
+    
+    // Auto-select this profile if it's the first one
+    if (profiles.length === 0) {
+      setActiveProfile(newProfile);
+    }
+    
     return newProfile;
   };
 
