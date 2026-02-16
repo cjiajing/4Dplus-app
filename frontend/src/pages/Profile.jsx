@@ -1,173 +1,302 @@
-import React from 'react';
-import { useUser } from '../contexts/UserContext';
-import { Mail, Calendar, Phone, MapPin, Heart, Edit2, Sparkles, TrendingUp, Award } from 'lucide-react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useLocalData } from '../contexts/LocalDataContext';
+import { Plus, User, Phone, Calendar, Heart, Edit2, Trash2, ChevronRight } from 'lucide-react';
 
-const Profile = () => {
-  const { user } = useUser();
+const Profiles = () => {
   const navigate = useNavigate();
-
-  if (!user) return null;
+  const { profiles, activeProfile, setActiveProfile, deleteProfile } = useLocalData();
+  const [showAddForm, setShowAddForm] = useState(false);
 
   return (
     <div className="space-y-6">
-      {/* Profile Header */}
-      <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-6 text-white relative overflow-hidden">
-        <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-8 -mt-8"></div>
-        <div className="relative flex items-center gap-4">
-          <div className="w-20 h-20 bg-white rounded-2xl flex items-center justify-center shadow-lg">
-            <span className="text-3xl font-bold text-blue-600">
-              {user.email?.charAt(0).toUpperCase()}
-            </span>
-          </div>
-          <div>
-            <h1 className="text-xl font-bold">{user.email}</h1>
-            <p className="text-blue-100 text-sm">Member since Jan 2024</p>
-            <div className="flex items-center gap-1 mt-2">
-              <Sparkles size={14} className="text-yellow-300" />
-              <span className="text-xs">Free Member</span>
-            </div>
-          </div>
-        </div>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Your Profiles</h1>
+        <button
+          onClick={() => setShowAddForm(true)}
+          className="bg-blue-600 text-white p-3 rounded-xl flex items-center gap-2"
+        >
+          <Plus size={20} />
+          <span>Add</span>
+        </button>
       </div>
 
-      {/* Personal Information */}
-      <div className="bg-white rounded-xl p-5 shadow-sm border border-blue-100">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Personal Information</h2>
-          <button 
-            onClick={() => navigate('/settings')}
-            className="text-blue-600 text-sm flex items-center gap-1"
+      {showAddForm && (
+        <AddProfileForm onClose={() => setShowAddForm(false)} />
+      )}
+
+      <div className="space-y-3">
+        {profiles.map(profile => (
+          <ProfileCard 
+            key={profile.id}
+            profile={profile}
+            isActive={activeProfile?.id === profile.id}
+            onSelect={() => setActiveProfile(profile)}
+            onDelete={() => deleteProfile(profile.id)}
+            onEdit={() => navigate(`/profile/edit/${profile.id}`)}
+          />
+        ))}
+      </div>
+
+      {profiles.length === 0 && !showAddForm && (
+        <div className="text-center py-12 bg-white rounded-xl border border-blue-100">
+          <User size={48} className="mx-auto text-gray-300 mb-3" />
+          <p className="text-gray-500 mb-4">No profiles yet</p>
+          <button
+            onClick={() => setShowAddForm(true)}
+            className="text-blue-600 font-semibold"
           >
-            <Edit2 size={14} />
-            Edit
+            Create your first profile →
           </button>
         </div>
-
-        <div className="space-y-4">
-          <InfoItem 
-            icon={<Mail size={18} className="text-gray-400" />}
-            label="Email"
-            value={user.email}
-          />
-          <InfoItem 
-            icon={<Calendar size={18} className="text-gray-400" />}
-            label="Birth Date"
-            value={user.birth_date ? new Date(user.birth_date).toLocaleDateString() : 'Not provided'}
-          />
-          <InfoItem 
-            icon={<Phone size={18} className="text-gray-400" />}
-            label="Phone"
-            value={user.phone_number || 'Not provided'}
-          />
-          <InfoItem 
-            icon={<MapPin size={18} className="text-gray-400" />}
-            label="Address"
-            value={user.address || 'Not provided'}
-          />
-          <InfoItem 
-            icon={<Heart size={18} className="text-gray-400" />}
-            label="Favorite Number"
-            value={user.favorite_number || 'Not provided'}
-          />
-        </div>
-      </div>
-
-      {/* Statistics */}
-      <div className="bg-white rounded-xl p-5 shadow-sm border border-blue-100">
-        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <TrendingUp size={20} className="text-blue-600" />
-          Your Statistics
-        </h2>
-        <div className="grid grid-cols-2 gap-4">
-          <StatBox 
-            label="Total Predictions"
-            value="156"
-            change="+12 this week"
-          />
-          <StatBox 
-            label="Accuracy Rate"
-            value="23%"
-            change="+5% vs last month"
-          />
-          <StatBox 
-            label="Best Hit"
-            value="2nd Prize"
-            subvalue="Number: 1985"
-          />
-          <StatBox 
-            label="Active Alerts"
-            value="3"
-            subvalue="High probability"
-          />
-        </div>
-      </div>
-
-      {/* Recent Activity */}
-      <div className="bg-white rounded-xl p-5 shadow-sm border border-blue-100">
-        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
-          <Award size={20} className="text-blue-600" />
-          Recent Activity
-        </h2>
-        <div className="space-y-3">
-          <ActivityItem 
-            date="15 Jan 2024"
-            description="Number 1985 appeared as 2nd Prize"
-            type="win"
-          />
-          <ActivityItem 
-            date="12 Jan 2024"
-            description="3 new high-probability alerts"
-            type="alert"
-          />
-          <ActivityItem 
-            date="08 Jan 2024"
-            description="Prediction accuracy improved"
-            type="improvement"
-          />
-        </div>
-      </div>
+      )}
     </div>
   );
 };
 
-const InfoItem = ({ icon, label, value }) => (
-  <div className="flex items-center gap-3">
-    <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-      {icon}
-    </div>
-    <div>
-      <p className="text-xs text-gray-500">{label}</p>
-      <p className="text-sm font-medium text-gray-800">{value}</p>
-    </div>
-  </div>
-);
+const AddProfileForm = ({ onClose }) => {
+  const { addProfile } = useLocalData();
+  const [formData, setFormData] = useState({
+    name: '',
+    birthDates: [''],
+    phoneNumbers: [''],
+    favoriteNumbers: ['']
+  });
 
-const StatBox = ({ label, value, change, subvalue }) => (
-  <div className="bg-gray-50 p-4 rounded-lg">
-    <p className="text-xs text-gray-500 mb-1">{label}</p>
-    <p className="text-xl font-bold text-gray-800">{value}</p>
-    {change && <p className="text-xs text-green-600 mt-1">{change}</p>}
-    {subvalue && <p className="text-xs text-gray-500 mt-1">{subvalue}</p>}
-  </div>
-);
+  const handleAddField = (field) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: [...prev[field], '']
+    }));
+  };
 
-const ActivityItem = ({ date, description, type }) => {
-  const colors = {
-    win: 'bg-green-100 text-green-600',
-    alert: 'bg-red-100 text-red-600',
-    improvement: 'bg-blue-100 text-blue-600'
+  const handleRemoveField = (field, index) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: prev[field].filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleFieldChange = (field, index, value) => {
+    setFormData(prev => ({
+      ...prev,
+      [field]: prev[field].map((item, i) => i === index ? value : item)
+    }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    
+    // Filter out empty values
+    const profileData = {
+      name: formData.name || 'My Profile',
+      birthDates: formData.birthDates.filter(bd => bd.trim()),
+      phoneNumbers: formData.phoneNumbers.filter(pn => pn.trim()),
+      favoriteNumbers: formData.favoriteNumbers.filter(fn => fn.trim())
+    };
+    
+    addProfile(profileData);
+    onClose();
   };
 
   return (
-    <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
-      <div className={`w-2 h-2 mt-2 rounded-full ${colors[type]}`}></div>
-      <div>
-        <p className="text-sm text-gray-800">{description}</p>
-        <p className="text-xs text-gray-500 mt-1">{date}</p>
-      </div>
+    <div className="bg-white rounded-xl p-5 shadow-sm border border-blue-100">
+      <h2 className="text-lg font-semibold mb-4">Add New Profile</h2>
+      
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1">
+            Profile Name (Optional)
+          </label>
+          <input
+            type="text"
+            value={formData.name}
+            onChange={(e) => setFormData({...formData, name: e.target.value})}
+            placeholder="e.g., My Numbers, Family"
+            className="w-full p-3 border border-gray-300 rounded-lg"
+          />
+        </div>
+
+        {/* Birth Dates */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Birth Dates (DD-MM-YYYY)
+          </label>
+          {formData.birthDates.map((bd, index) => (
+            <div key={index} className="flex gap-2 mb-2">
+              <input
+                type="text"
+                value={bd}
+                onChange={(e) => handleFieldChange('birthDates', index, e.target.value)}
+                placeholder="28-07-1985"
+                pattern="\d{2}-\d{2}-\d{4}"
+                className="flex-1 p-3 border border-gray-300 rounded-lg"
+              />
+              {formData.birthDates.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => handleRemoveField('birthDates', index)}
+                  className="p-3 text-red-500"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => handleAddField('birthDates')}
+            className="text-sm text-blue-600"
+          >
+            + Add another birth date
+          </button>
+        </div>
+
+        {/* Phone Numbers */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Singapore Phone Numbers (8 digits)
+          </label>
+          {formData.phoneNumbers.map((pn, index) => (
+            <div key={index} className="flex gap-2 mb-2">
+              <input
+                type="tel"
+                value={pn}
+                onChange={(e) => handleFieldChange('phoneNumbers', index, e.target.value)}
+                placeholder="91234567"
+                pattern="[0-9]{8}"
+                maxLength="8"
+                className="flex-1 p-3 border border-gray-300 rounded-lg"
+              />
+              {formData.phoneNumbers.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => handleRemoveField('phoneNumbers', index)}
+                  className="p-3 text-red-500"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => handleAddField('phoneNumbers')}
+            className="text-sm text-blue-600"
+          >
+            + Add another phone number
+          </button>
+          <p className="text-xs text-gray-500 mt-1">We'll use first 4 and last 4 digits</p>
+        </div>
+
+        {/* Favorite Numbers */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Favorite Numbers (Optional)
+          </label>
+          <p className="text-xs text-gray-500 mb-2">Car plates, special dates, lucky numbers</p>
+          {formData.favoriteNumbers.map((fn, index) => (
+            <div key={index} className="flex gap-2 mb-2">
+              <input
+                type="text"
+                value={fn}
+                onChange={(e) => handleFieldChange('favoriteNumbers', index, e.target.value)}
+                placeholder="1234, SGP888, etc"
+                className="flex-1 p-3 border border-gray-300 rounded-lg"
+              />
+              {formData.favoriteNumbers.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => handleRemoveField('favoriteNumbers', index)}
+                  className="p-3 text-red-500"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => handleAddField('favoriteNumbers')}
+            className="text-sm text-blue-600"
+          >
+            + Add another favorite number
+          </button>
+        </div>
+
+        <div className="flex gap-3 pt-4">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 bg-gray-100 text-gray-700 py-3 rounded-lg"
+          >
+            Cancel
+          </button>
+          <button
+            type="submit"
+            className="flex-1 bg-blue-600 text-white py-3 rounded-lg"
+          >
+            Save Profile
+          </button>
+        </div>
+      </form>
     </div>
   );
 };
 
-export default Profile;
+const ProfileCard = ({ profile, isActive, onSelect, onDelete, onEdit }) => (
+  <div 
+    className={`bg-white rounded-xl p-4 shadow-sm border-2 transition-all
+      ${isActive ? 'border-blue-500 bg-blue-50' : 'border-blue-100'}`}
+  >
+    <div className="flex justify-between items-start mb-3">
+      <div className="flex items-center gap-2">
+        <User size={20} className="text-blue-600" />
+        <h3 className="font-semibold">{profile.name}</h3>
+        {isActive && (
+          <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded-full">Active</span>
+        )}
+      </div>
+      <div className="flex gap-2">
+        <button onClick={onEdit} className="p-1 text-gray-500">
+          <Edit2 size={16} />
+        </button>
+        <button onClick={onDelete} className="p-1 text-red-500">
+          <Trash2 size={16} />
+        </button>
+      </div>
+    </div>
+
+    <div className="space-y-2 text-sm">
+      {profile.birthDates?.length > 0 && (
+        <div className="flex items-center gap-2 text-gray-600">
+          <Calendar size={14} />
+          <span>{profile.birthDates.join(', ')}</span>
+        </div>
+      )}
+      
+      {profile.phoneNumbers?.length > 0 && (
+        <div className="flex items-center gap-2 text-gray-600">
+          <Phone size={14} />
+          <span>{profile.phoneNumbers.join(', ')}</span>
+        </div>
+      )}
+      
+      {profile.favoriteNumbers?.length > 0 && (
+        <div className="flex items-center gap-2 text-gray-600">
+          <Heart size={14} />
+          <span>{profile.favoriteNumbers.join(', ')}</span>
+        </div>
+      )}
+    </div>
+
+    <button
+      onClick={onSelect}
+      className="w-full mt-4 bg-blue-600 text-white py-2 rounded-lg text-sm font-medium"
+    >
+      Use This Profile
+    </button>
+  </div>
+);
+
+export default Profiles;
