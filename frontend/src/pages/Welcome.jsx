@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Calendar, Phone, Home as HomeIcon, Heart, Sparkles, TrendingUp, Radio } from 'lucide-react';
+import { Calendar, Phone, Home as HomeIcon, Heart, Sparkles, Radio } from 'lucide-react';
 
 const Welcome = () => {
   const navigate = useNavigate();
