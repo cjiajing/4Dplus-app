@@ -1,15 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  Radio, 
-  Calendar, 
-  Clock, 
-  Trophy, 
-  Award, 
-  ChevronRight,
-  RefreshCw,
-  History,
-  Sparkles
-} from 'lucide-react';
+import { Radio, Clock, Trophy, Award, ChevronRight, RefreshCw, History, Sparkles } from 'lucide-react';
 
 const LiveDraw = () => {
   const [currentDraw, setCurrentDraw] = useState(null);
