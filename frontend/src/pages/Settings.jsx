@@ -1,15 +1,17 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useUser } from '../contexts/UserContext';
-import { Bell, Moon, Globe, LogOut, ChevronRight, Sparkles, Shield, HelpCircle } from 'lucide-react';
+import { useLocalData } from '../contexts/LocalDataContext';
+import { Bell, Moon, Globe, Database, ChevronRight, Sparkles, Shield, HelpCircle } from 'lucide-react';
 
 const Settings = () => {
   const navigate = useNavigate();
-  const { logout } = useUser();
+  const { profiles } = useLocalData();
 
-  const handleLogout = async () => {
-    await logout();
-    navigate('/');
+  const clearAllData = () => {
+    if (window.confirm('Clear all profiles and data? This cannot be undone.')) {
+      localStorage.removeItem('4dplus_data');
+      window.location.href = '/';
+    }
   };
 
   return (
@@ -19,6 +21,16 @@ const Settings = () => {
         <h1 className="text-2xl font-bold">Settings</h1>
       </div>
 
+      {/* Data Info */}
+      <div className="bg-blue-50 rounded-xl p-4">
+        <p className="text-sm text-blue-800">
+          📱 All data stored locally on this device
+        </p>
+        <p className="text-xs text-blue-600 mt-1">
+          {profiles.length} profile(s) • Last backed up: Never
+        </p>
+      </div>
+
       {/* Preferences */}
       <div className="bg-white rounded-xl p-5 shadow-sm border border-blue-100">
         <h2 className="text-lg font-semibold mb-4">Preferences</h2>
@@ -26,7 +38,7 @@ const Settings = () => {
           <SettingItem 
             icon={<Bell size={20} />}
             label="Notifications"
-            value="Enabled"
+            value="Off"
             onClick={() => {}}
           />
           <SettingItem 
@@ -44,37 +56,58 @@ const Settings = () => {
         </div>
       </div>
 
-      {/* Account */}
+      {/* Data Management */}
       <div className="bg-white rounded-xl p-5 shadow-sm border border-blue-100">
-        <h2 className="text-lg font-semibold mb-4">Account</h2>
+        <h2 className="text-lg font-semibold mb-4">Data</h2>
         <div className="space-y-2">
           <SettingItem 
-            icon={<Shield size={20} />}
-            label="Privacy"
+            icon={<Database size={20} />}
+            label="Export Data"
             value=""
-            onClick={() => {}}
-          />
-          <SettingItem 
-            icon={<HelpCircle size={20} />}
-            label="Help & Support"
-            value=""
-            onClick={() => {}}
+            onClick={() => {
+              const data = localStorage.getItem('4dplus_data');
+              const blob = new Blob([data], {type: 'application/json'});
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = '4dplus-backup.json';
+              a.click();
+            }}
           />
           <button
-            onClick={handleLogout}
+            onClick={clearAllData}
             className="w-full flex items-center justify-between p-3 rounded-lg hover:bg-red-50 transition-colors text-red-600"
           >
             <div className="flex items-center gap-3">
-              <LogOut size={20} />
-              <span>Log Out</span>
+              <Shield size={20} />
+              <span>Clear All Data</span>
             </div>
           </button>
         </div>
       </div>
 
+      {/* Support */}
+      <div className="bg-white rounded-xl p-5 shadow-sm border border-blue-100">
+        <h2 className="text-lg font-semibold mb-4">Support</h2>
+        <div className="space-y-2">
+          <SettingItem 
+            icon={<HelpCircle size={20} />}
+            label="Help & FAQ"
+            value=""
+            onClick={() => window.alert('FAQ: Data is stored locally. No account needed. For support, contact...')}
+          />
+          <SettingItem 
+            icon={<Shield size={20} />}
+            label="Privacy Policy"
+            value=""
+            onClick={() => window.alert('All data stays on your device. We never collect or store your information.')}
+          />
+        </div>
+      </div>
+
       {/* Version */}
       <div className="text-center">
-        <p className="text-xs text-gray-500">4Dplus App v1.0.0</p>
+        <p className="text-xs text-gray-500">4Dplus App v2.0 - Privacy First</p>
         <p className="text-xs text-gray-400 mt-1">© 2024 4Dplus. All rights reserved.</p>
       </div>
     </div>
