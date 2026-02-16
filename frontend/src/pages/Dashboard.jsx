@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useUser } from '../contexts/UserContext';
-import { Bell, TrendingUp, Calendar, Award, ChevronRight, Sparkles, Radio } from 'lucide-react';
+import { Bell, TrendingUp, Calendar, ChevronRight, Sparkles, Radio } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
 const Dashboard = () => {
