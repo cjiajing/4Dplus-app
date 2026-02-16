@@ -1,7 +1,7 @@
 // frontend/src/components/MobileLayout.jsx
 import React from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { Home, TrendingUp, User, Settings, Menu } from 'lucide-react';
+import { Home, TrendingUp, Radio, User, Menu, Sparkles } from 'lucide-react';
 import { useUser } from '../contexts/UserContext';
 
 const MobileLayout = ({ children }) => {
