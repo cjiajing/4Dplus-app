@@ -1,36 +1,32 @@
-// Force redeploy - fixed dependencies
-// frontend/src/App.jsx
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { UserProvider } from './contexts/UserContext';
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { LocalDataProvider } from './contexts/LocalDataContext';
 import MobileLayout from './components/MobileLayout';
 import Welcome from './pages/Welcome';
-import Register from './pages/Register';
-import Login from './pages/Login';
+import Profiles from './pages/Profiles';
 import Dashboard from './pages/Dashboard';
-import Predictions from './pages/Predictions';
-import Profile from './pages/Profile';
-import Settings from './pages/Settings';
 import LiveDraw from './pages/LiveDraw';
+import Predictions from './pages/Predictions';
+import ProfileEdit from './pages/ProfileEdit';
+import Settings from './pages/Settings';
 
 function App() {
   return (
-    <UserProvider>
+    <LocalDataProvider>
       <Router>
         <MobileLayout>
           <Routes>
             <Route path="/" element={<Welcome />} />
-            <Route path="/register" element={<Register />} />
-            <Route path="/login" element={<Login />} />
+            <Route path="/profiles" element={<Profiles />} />
+            <Route path="/profile/edit/:id" element={<ProfileEdit />} />
             <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/predictions" element={<Predictions />} />
-            <Route path="/profile" element={<Profile />} />
-            <Route path="/settings" element={<Settings />} />
             <Route path="/live-draw" element={<LiveDraw />} />
+            <Route path="/predictions" element={<Predictions />} />
+            <Route path="/settings" element={<Settings />} />
           </Routes>
         </MobileLayout>
       </Router>
-    </UserProvider>
+    </LocalDataProvider>
   );
 }
 
