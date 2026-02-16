@@ -1,63 +1,40 @@
 import React, { useState } from 'react';
-import { useUser } from '../contexts/UserContext';
-import { Filter, Calendar, Trophy, Clock, TrendingUp, Sparkles } from 'lucide-react';
+import { useLocalData } from '../contexts/LocalDataContext';
+import { Filter, Calendar, Trophy, Clock, TrendingUp, Sparkles, Users } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const Predictions = () => {
-  const { predictions } = useUser();
+  const navigate = useNavigate();
+  const { activeProfile, predictions } = useLocalData();
   const [filter, setFilter] = useState('all');
   const [showFilters, setShowFilters] = useState(false);
 
-  // Sample predictions if none exist
-  const samplePredictions = [
-    {
-      number: '1985',
-      confidence_score: 85,
-      last_appearance: '2024-01-15',
-      prize_category: 'Second Prize',
-      reason: 'Matches your birth year + appeared in last draw'
-    },
-    {
-      number: '2807',
-      confidence_score: 72,
-      last_appearance: '2024-01-15',
-      prize_category: 'First Prize',
-      reason: 'Contains your birth date pattern'
-    },
-    {
-      number: '1234',
-      confidence_score: 65,
-      last_appearance: '2023-12-20',
-      prize_category: 'Third Prize',
-      reason: 'Sequential pattern + favorite number match'
-    },
-    {
-      number: '5678',
-      confidence_score: 45,
-      last_appearance: '2023-11-05',
-      prize_category: 'Starter',
-      reason: 'Phone number last 4 digits pattern'
-    },
-    {
-      number: '9012',
-      confidence_score: 38,
-      last_appearance: '2023-10-28',
-      prize_category: 'Consolation',
-      reason: 'Address postal code pattern'
-    }
-  ];
-
-  const displayPredictions = predictions?.length ? predictions : samplePredictions;
+  if (!activeProfile) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-6">
+        <Users size={64} className="text-blue-300 mb-4" />
+        <h2 className="text-2xl font-bold text-gray-800 mb-2">No Profile Selected</h2>
+        <p className="text-gray-500 mb-6">Select a profile to see personalized predictions</p>
+        <button
+          onClick={() => navigate('/profiles')}
+          className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold"
+        >
+          Choose Profile
+        </button>
+      </div>
+    );
+  }
 
   const getFilteredPredictions = () => {
     switch(filter) {
       case 'high':
-        return displayPredictions.filter(p => p.confidence_score >= 70);
+        return predictions.filter(p => p.confidence >= 70);
       case 'medium':
-        return displayPredictions.filter(p => p.confidence_score >= 50 && p.confidence_score < 70);
+        return predictions.filter(p => p.confidence >= 50 && p.confidence < 70);
       case 'low':
-        return displayPredictions.filter(p => p.confidence_score < 50);
+        return predictions.filter(p => p.confidence < 50);
       default:
-        return displayPredictions;
+        return predictions;
     }
   };
 
@@ -74,6 +51,20 @@ const Predictions = () => {
           className="p-2 bg-white rounded-lg shadow-sm border border-blue-100"
         >
           <Filter size={20} className="text-blue-600" />
+        </button>
+      </div>
+
+      {/* Active Profile Info */}
+      <div className="bg-blue-50 rounded-xl p-4 flex items-center justify-between">
+        <div>
+          <span className="text-xs text-blue-600">Active Profile</span>
+          <p className="font-semibold text-blue-800">{activeProfile.name}</p>
+        </div>
+        <button
+          onClick={() => navigate('/profiles')}
+          className="text-sm text-blue-600"
+        >
+          Switch
         </button>
       </div>
 
@@ -143,18 +134,18 @@ const PredictionCard = ({ prediction }) => {
   };
 
   return (
-    <div className={`rounded-xl p-5 shadow-sm border border-blue-100 ${getConfidenceColor(prediction.confidence_score)}`}>
+    <div className={`rounded-xl p-5 shadow-sm border border-blue-100 ${getConfidenceColor(prediction.confidence)}`}>
       <div className="flex justify-between items-start mb-3">
         <div>
           <span className="text-3xl font-mono font-bold">{prediction.number}</span>
           <div className="flex items-center gap-3 mt-1">
             <span className="text-xs text-gray-500 flex items-center gap-1">
               <Clock size={12} />
-              Confidence: {prediction.confidence_score}%
+              Confidence: {prediction.confidence}%
             </span>
           </div>
         </div>
-        {prediction.confidence_score >= 70 && (
+        {prediction.confidence >= 70 && (
           <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full flex items-center gap-1">
             <TrendingUp size={12} />
             Hot Pick
@@ -162,7 +153,7 @@ const PredictionCard = ({ prediction }) => {
         )}
       </div>
 
-      {prediction.last_appearance && (
+      {prediction.lastAppearance && (
         <div className="bg-gray-50 rounded-lg p-3 mb-3">
           <div className="flex items-center justify-between text-sm">
             <span className="text-gray-600 flex items-center gap-1">
@@ -170,25 +161,20 @@ const PredictionCard = ({ prediction }) => {
               Last appeared:
             </span>
             <span className="font-medium">
-              {new Date(prediction.last_appearance).toLocaleDateString('en-MY')}
+              {new Date(prediction.lastAppearance).toLocaleDateString('en-MY')}
             </span>
           </div>
-          {prediction.prize_category && (
+          {prediction.prizeCategory && (
             <div className="flex items-center justify-between text-sm mt-1">
               <span className="text-gray-600 flex items-center gap-1">
                 <Trophy size={14} />
                 Prize:
               </span>
-              <span className="font-medium text-yellow-600">{prediction.prize_category}</span>
+              <span className="font-medium text-yellow-600">{prediction.prizeCategory}</span>
             </div>
           )}
         </div>
       )}
-
-      <p className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
-        <span className="font-semibold">Why: </span>
-        {prediction.reason}
-      </p>
     </div>
   );
 };
