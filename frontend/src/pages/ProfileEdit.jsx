@@ -77,7 +77,7 @@ const ProfileEdit = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-20">
       <div className="flex items-center gap-3">
         <button onClick={() => navigate('/profiles')} className="p-2">
           <ArrowLeft size={20} />
@@ -95,7 +95,7 @@ const ProfileEdit = () => {
             value={formData.name}
             onChange={(e) => setFormData({...formData, name: e.target.value})}
             placeholder="e.g., My Numbers, Family"
-            className="w-full p-3 border border-gray-300 rounded-lg"
+            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
           />
         </div>
 
@@ -112,7 +112,7 @@ const ProfileEdit = () => {
                 onChange={(e) => handleFieldChange('birthDates', index, e.target.value)}
                 placeholder="28-07-1985"
                 pattern="\d{2}-\d{2}-\d{4}"
-                className="flex-1 p-3 border border-gray-300 rounded-lg"
+                className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
               {formData.birthDates.length > 1 && (
                 <button
@@ -148,7 +148,7 @@ const ProfileEdit = () => {
                 placeholder="91234567"
                 pattern="[0-9]{8}"
                 maxLength="8"
-                className="flex-1 p-3 border border-gray-300 rounded-lg"
+                className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
               {formData.phoneNumbers.length > 1 && (
                 <button
@@ -184,7 +184,7 @@ const ProfileEdit = () => {
                 value={fn}
                 onChange={(e) => handleFieldChange('favoriteNumbers', index, e.target.value)}
                 placeholder="1234, SGP888, etc"
-                className="flex-1 p-3 border border-gray-300 rounded-lg"
+                className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
               {formData.favoriteNumbers.length > 1 && (
                 <button
@@ -209,7 +209,7 @@ const ProfileEdit = () => {
         <button
           type="submit"
           className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white py-4 rounded-xl font-semibold
-            flex items-center justify-center gap-2"
+            flex items-center justify-center gap-2 shadow-lg"
         >
           <Save size={20} />
           Save Changes
