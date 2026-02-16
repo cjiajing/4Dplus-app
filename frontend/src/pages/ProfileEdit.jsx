@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { useLocalData } from '../contexts/LocalDataContext';
-import { Save, ArrowLeft, Plus, X } from 'lucide-react';
+import { Save, ArrowLeft, Plus, X, Home } from 'lucide-react';
 
 const ProfileEdit = () => {
   const { id } = useParams();
@@ -13,6 +13,7 @@ const ProfileEdit = () => {
     name: '',
     birthDates: [''],
     phoneNumbers: [''],
+    addresses: [''],
     favoriteNumbers: ['']
   });
 
@@ -22,6 +23,7 @@ const ProfileEdit = () => {
         name: profile.name || '',
         birthDates: profile.birthDates?.length ? profile.birthDates : [''],
         phoneNumbers: profile.phoneNumbers?.length ? profile.phoneNumbers : [''],
+        addresses: profile.addresses?.length ? profile.addresses : [''],
         favoriteNumbers: profile.favoriteNumbers?.length ? profile.favoriteNumbers : ['']
       });
     }
@@ -69,6 +71,7 @@ const ProfileEdit = () => {
       name: formData.name || 'My Profile',
       birthDates: formData.birthDates.filter(bd => bd.trim()),
       phoneNumbers: formData.phoneNumbers.filter(pn => pn.trim()),
+      addresses: formData.addresses.filter(addr => addr.trim()),
       favoriteNumbers: formData.favoriteNumbers.filter(fn => fn.trim())
     };
     
@@ -100,7 +103,7 @@ const ProfileEdit = () => {
         </div>
 
         {/* Birth Dates */}
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-blue-100">
+        <div className="bg-blue-50 p-5 rounded-xl border border-blue-100">
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Birth Dates (DD-MM-YYYY)
           </label>
@@ -135,7 +138,7 @@ const ProfileEdit = () => {
         </div>
 
         {/* Phone Numbers */}
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-blue-100">
+        <div className="bg-green-50 p-5 rounded-xl border border-green-100">
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Singapore Phone Numbers (8 digits)
           </label>
@@ -171,10 +174,46 @@ const ProfileEdit = () => {
           <p className="text-xs text-gray-500 mt-2">We'll use first 4 and last 4 digits</p>
         </div>
 
-        {/* Favorite Numbers */}
-        <div className="bg-white rounded-xl p-5 shadow-sm border border-blue-100">
+        {/* Addresses */}
+        <div className="bg-purple-50 p-5 rounded-xl border border-purple-100">
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Favorite Numbers
+            <Home size={16} className="inline mr-1" /> Home Addresses
+          </label>
+          <p className="text-xs text-gray-500 mb-3">Include house numbers and postal codes for number patterns</p>
+          {formData.addresses.map((addr, index) => (
+            <div key={index} className="flex gap-2 mb-2">
+              <input
+                type="text"
+                value={addr}
+                onChange={(e) => handleFieldChange('addresses', index, e.target.value)}
+                placeholder="Blk 123, #04-56, S123456"
+                className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+              {formData.addresses.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => handleRemoveField('addresses', index)}
+                  className="p-3 text-red-500 hover:bg-red-50 rounded-lg"
+                >
+                  <X size={20} />
+                </button>
+              )}
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => handleAddField('addresses')}
+            className="text-sm text-blue-600 flex items-center gap-1 mt-2"
+          >
+            <Plus size={16} /> Add another address
+          </button>
+          <p className="text-xs text-gray-500 mt-2">We'll extract numbers from: house numbers, floor numbers, unit numbers, postal codes</p>
+        </div>
+
+        {/* Favorite Numbers */}
+        <div className="bg-yellow-50 p-5 rounded-xl border border-yellow-100">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Favorite Numbers (Optional)
           </label>
           <p className="text-xs text-gray-500 mb-3">Car plates, special dates, lucky numbers</p>
           {formData.favoriteNumbers.map((fn, index) => (
