@@ -1,29 +1,77 @@
 import React, { useState, useEffect } from 'react';
-import { useUser } from '../contexts/UserContext';
-import { Bell, TrendingUp, Calendar, ChevronRight, Sparkles, Radio } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useLocalData } from '../contexts/LocalDataContext';
+import { Bell, TrendingUp, Calendar, ChevronRight, Sparkles, Radio, Users } from 'lucide-react';
 
 const Dashboard = () => {
-  const { user, predictions } = useUser();
   const navigate = useNavigate();
+  const { activeProfile, profiles, setActiveProfile, predictions } = useLocalData();
   const [alerts, setAlerts] = useState([]);
+  const [latestDraw, setLatestDraw] = useState(null);
+
+  // Fetch latest draw from Supabase (public data only)
+  useEffect(() => {
+    fetchLatestDraw();
+  }, []);
 
   useEffect(() => {
     if (predictions) {
-      const highProb = predictions.filter(p => p.confidence_score > 70);
+      const highProb = predictions.filter(p => p.confidence > 70);
       setAlerts(highProb);
     }
   }, [predictions]);
 
-  const latestDraw = {
-    date: new Date().toLocaleDateString('en-MY', { day: 'numeric', month: 'short', year: 'numeric' }),
-    first: '2807',
-    second: '1985',
-    third: '1234'
+  const fetchLatestDraw = async () => {
+    // This will be replaced with your actual Supabase query
+    // For now, using sample data
+    setLatestDraw({
+      date: new Date().toLocaleDateString('en-MY', { 
+        day: 'numeric', 
+        month: 'short', 
+        year: 'numeric' 
+      }),
+      first: '9651',
+      second: '3688',
+      third: '2645'
+    });
   };
+
+  if (!activeProfile) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] text-center px-6">
+        <Users size={64} className="text-blue-300 mb-4" />
+        <h2 className="text-2xl font-bold text-gray-800 mb-2">No Profile Selected</h2>
+        <p className="text-gray-500 mb-6">Select or create a profile to see personalized predictions</p>
+        <button
+          onClick={() => navigate('/profiles')}
+          className="bg-blue-600 text-white px-6 py-3 rounded-xl font-semibold"
+        >
+          Manage Profiles
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
+      {/* Profile Switcher */}
+      {profiles.length > 1 && (
+        <div className="flex overflow-x-auto gap-2 pb-2 -mx-4 px-4">
+          {profiles.map(profile => (
+            <button
+              key={profile.id}
+              onClick={() => setActiveProfile(profile)}
+              className={`px-4 py-2 rounded-full whitespace-nowrap text-sm font-medium transition-all
+                ${activeProfile.id === profile.id 
+                  ? 'bg-blue-600 text-white' 
+                  : 'bg-white text-gray-600 border border-blue-200'}`}
+            >
+              {profile.name}
+            </button>
+          ))}
+        </div>
+      )}
+
       {/* Welcome Section */}
       <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-6 text-white relative overflow-hidden">
         <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -mr-8 -mt-8"></div>
@@ -32,8 +80,8 @@ const Dashboard = () => {
             <Sparkles size={20} className="text-yellow-300" />
             <span className="text-blue-100">Welcome back,</span>
           </div>
-          <h1 className="text-2xl font-bold mb-1">{user?.email?.split('@')[0]}</h1>
-          <p className="text-blue-100 text-sm">Ready for today's predictions?</p>
+          <h1 className="text-2xl font-bold mb-1">{activeProfile.name}</h1>
+          <p className="text-blue-100 text-sm">Your personal numbers are ready</p>
         </div>
       </div>
 
@@ -56,10 +104,15 @@ const Dashboard = () => {
                 <div className="flex justify-between items-center mb-2">
                   <span className="text-3xl font-mono font-bold text-red-600">{alert.number}</span>
                   <span className="bg-red-200 text-red-700 text-xs px-2 py-1 rounded-full">
-                    {alert.confidence_score}% confidence
+                    {alert.confidence}% confidence
                   </span>
                 </div>
-                <p className="text-sm text-red-700">{alert.reason || 'High probability based on your personal numbers'}</p>
+                <p className="text-sm text-red-700">
+                  Last appeared: {alert.lastAppearance 
+                    ? new Date(alert.lastAppearance).toLocaleDateString() 
+                    : 'Never'}
+                  {alert.prizeCategory && ` (${alert.prizeCategory})`}
+                </p>
               </div>
             ))}
           </div>
@@ -67,36 +120,38 @@ const Dashboard = () => {
       )}
 
       {/* Latest Draw Results */}
-      <div className="bg-white rounded-xl p-5 shadow-sm border border-blue-100">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Radio size={20} className="text-blue-600" />
-            Latest Draw
-          </h2>
-          <span className="text-sm text-gray-500">{latestDraw.date}</span>
-        </div>
-        
-        <div className="grid grid-cols-3 gap-3">
-          <ResultCard place="1st" number={latestDraw.first} color="yellow" />
-          <ResultCard place="2nd" number={latestDraw.second} color="gray" />
-          <ResultCard place="3rd" number={latestDraw.third} color="orange" />
-        </div>
+      {latestDraw && (
+        <div className="bg-white rounded-xl p-5 shadow-sm border border-blue-100">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold flex items-center gap-2">
+              <Radio size={20} className="text-blue-600" />
+              Latest Draw
+            </h2>
+            <span className="text-sm text-gray-500">{latestDraw.date}</span>
+          </div>
+          
+          <div className="grid grid-cols-3 gap-3">
+            <ResultCard place="1st" number={latestDraw.first} color="yellow" />
+            <ResultCard place="2nd" number={latestDraw.second} color="gray" />
+            <ResultCard place="3rd" number={latestDraw.third} color="orange" />
+          </div>
 
-        <button
-          onClick={() => navigate('/live-draw')}
-          className="w-full mt-4 text-blue-600 text-sm flex items-center justify-center gap-1 py-2"
-        >
-          View full results <ChevronRight size={16} />
-        </button>
-      </div>
+          <button
+            onClick={() => navigate('/live-draw')}
+            className="w-full mt-4 text-blue-600 text-sm flex items-center justify-center gap-1 py-2"
+          >
+            View full results <ChevronRight size={16} />
+          </button>
+        </div>
+      )}
 
       {/* Quick Stats */}
       <div className="grid grid-cols-2 gap-4">
         <StatCard 
           icon={<TrendingUp size={20} className="text-green-600" />}
-          label="Win Rate"
-          value="23%"
-          subtext="Last 30 days"
+          label="Total Numbers"
+          value={activeProfile.birthDates?.length + activeProfile.phoneNumbers?.length + activeProfile.favoriteNumbers?.length || 0}
+          subtext="Personal numbers"
         />
         <StatCard 
           icon={<Calendar size={20} className="text-blue-600" />}
@@ -126,19 +181,19 @@ const Dashboard = () => {
             <div key={index} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
               <div>
                 <span className="text-xl font-mono font-bold">{pred.number}</span>
-                {pred.last_appearance && (
+                {pred.lastAppearance && (
                   <p className="text-xs text-gray-500 mt-1">
-                    Last: {new Date(pred.last_appearance).toLocaleDateString()} 
-                    {pred.prize_category && ` • ${pred.prize_category}`}
+                    Last: {new Date(pred.lastAppearance).toLocaleDateString()} 
+                    {pred.prizeCategory && ` • ${pred.prizeCategory}`}
                   </p>
                 )}
               </div>
               <div className="text-right">
                 <span className={`text-sm font-semibold px-2 py-1 rounded-full
-                  ${pred.confidence_score > 70 ? 'bg-green-100 text-green-700' : 
-                    pred.confidence_score > 50 ? 'bg-yellow-100 text-yellow-700' : 
+                  ${pred.confidence > 70 ? 'bg-green-100 text-green-700' : 
+                    pred.confidence > 50 ? 'bg-yellow-100 text-yellow-700' : 
                     'bg-gray-100 text-gray-700'}`}>
-                  {pred.confidence_score}%
+                  {pred.confidence}%
                 </span>
               </div>
             </div>
