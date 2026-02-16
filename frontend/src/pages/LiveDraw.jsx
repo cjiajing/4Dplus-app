@@ -1,5 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { Radio, Clock, Trophy, Award, ChevronRight, RefreshCw, History, Sparkles } from 'lucide-react';
+import { 
+  Radio, 
+  Clock, 
+  Trophy, 
+  Award, 
+  ChevronRight,
+  RefreshCw,
+  History,
+  Sparkles,
+  AlertCircle
+} from 'lucide-react';
+import { fetchLatestDraw, fetchPastResults } from '../services/supabase';
 
 const LiveDraw = () => {
   const [currentDraw, setCurrentDraw] = useState(null);
@@ -8,6 +19,7 @@ const LiveDraw = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [selectedDraw, setSelectedDraw] = useState(null);
   const [showHistory, setShowHistory] = useState(false);
+  const [error, setError] = useState(null);
   const [countdown, setCountdown] = useState({
     days: 2,
     hours: 5,
@@ -16,12 +28,10 @@ const LiveDraw = () => {
   });
 
   useEffect(() => {
-    fetchLiveDraw();
-    fetchPreviousDraws();
+    loadDrawData();
     
     // Update countdown every second
     const timer = setInterval(updateCountdown, 1000);
-
     return () => clearInterval(timer);
   }, []);
 
@@ -40,45 +50,37 @@ const LiveDraw = () => {
     });
   };
 
-  const fetchLiveDraw = async () => {
-    // Simulated API call - replace with actual Supabase query
-    setTimeout(() => {
-      setCurrentDraw({
-        draw_number: 1234,
-        draw_date: new Date().toISOString(),
-        first_prize: '2807',
-        second_prize: '1985',
-        third_prize: '1234',
-        starter_prizes: ['5678', '9012', '3456', '7890', '2345', '6789', '0123', '4567', '8901', '3456'],
-        consolation_prizes: ['8765', '2109', '6543', '0987', '5432', '9876', '3210', '7654', '1098', '6543']
-      });
-      setLoading(false);
-    }, 1000);
-  };
+  const loadDrawData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      
+      // Fetch real data from Supabase
+      const [latest, past] = await Promise.all([
+        fetchLatestDraw(),
+        fetchPastResults()
+      ]);
 
-  const fetchPreviousDraws = async () => {
-    // Simulated API call - replace with actual Supabase query
-    setTimeout(() => {
-      const draws = [];
-      for (let i = 1; i <= 10; i++) {
-        draws.push({
-          draw_number: 1234 - i,
-          draw_date: new Date(Date.now() - i * 7 * 24 * 60 * 60 * 1000).toISOString(),
-          first_prize: Math.floor(Math.random() * 10000).toString().padStart(4, '0'),
-          second_prize: Math.floor(Math.random() * 10000).toString().padStart(4, '0'),
-          third_prize: Math.floor(Math.random() * 10000).toString().padStart(4, '0'),
-          starter_prizes: Array(10).fill().map(() => Math.floor(Math.random() * 10000).toString().padStart(4, '0')),
-          consolation_prizes: Array(10).fill().map(() => Math.floor(Math.random() * 10000).toString().padStart(4, '0'))
-        });
+      if (latest) {
+        setCurrentDraw(latest);
+      } else {
+        setError('No draw data available');
       }
-      setPreviousDraws(draws);
-    }, 1500);
+
+      if (past && past.length > 0) {
+        setPreviousDraws(past);
+      }
+    } catch (err) {
+      console.error('Error loading draw data:', err);
+      setError('Failed to load draw data');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await fetchLiveDraw();
-    await fetchPreviousDraws();
+    await loadDrawData();
     setTimeout(() => setRefreshing(false), 1000);
   };
 
@@ -90,11 +92,30 @@ const LiveDraw = () => {
     });
   };
 
+  const formatDrawNumber = (num) => {
+    return num ? num.toString().padStart(4, '0') : '0000';
+  };
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh]">
         <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mb-4"></div>
         <p className="text-gray-500">Loading live draws...</p>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[60vh] px-6">
+        <AlertCircle size={48} className="text-red-400 mb-4" />
+        <p className="text-gray-600 text-center mb-4">{error}</p>
+        <button
+          onClick={handleRefresh}
+          className="bg-blue-600 text-white px-6 py-3 rounded-xl font-medium"
+        >
+          Try Again
+        </button>
       </div>
     );
   }
@@ -124,7 +145,7 @@ const LiveDraw = () => {
         <div className="flex items-center justify-between mb-3">
           <span className="text-blue-100">Next Draw In</span>
           <span className="text-xs bg-blue-500 px-2 py-1 rounded-full">
-            Draw #{currentDraw?.draw_number + 1}
+            Draw #{currentDraw ? formatDrawNumber(currentDraw.draw_number + 1) : '----'}
           </span>
         </div>
         <div className="grid grid-cols-4 gap-2 text-center">
@@ -146,7 +167,7 @@ const LiveDraw = () => {
             <div>
               <h2 className="text-lg font-semibold">Latest Results</h2>
               <p className="text-sm text-gray-500">
-                Draw #{currentDraw.draw_number} • {formatDate(currentDraw.draw_date)}
+                Draw #{formatDrawNumber(currentDraw.draw_number)} • {formatDate(currentDraw.draw_date)}
               </p>
             </div>
             <span className="bg-green-100 text-green-700 text-xs px-2 py-1 rounded-full flex items-center gap-1">
@@ -184,7 +205,7 @@ const LiveDraw = () => {
               Starter Prizes (10 numbers)
             </h3>
             <div className="grid grid-cols-5 gap-2">
-              {currentDraw.starter_prizes.slice(0, 10).map((number, index) => (
+              {currentDraw.starter_prizes?.map((number, index) => (
                 <div 
                   key={index}
                   className="bg-gray-50 rounded-lg p-2 text-center font-mono font-bold text-sm"
@@ -202,7 +223,7 @@ const LiveDraw = () => {
               Consolation Prizes (10 numbers)
             </h3>
             <div className="grid grid-cols-5 gap-2">
-              {currentDraw.consolation_prizes.slice(0, 10).map((number, index) => (
+              {currentDraw.consolation_prizes?.map((number, index) => (
                 <div 
                   key={index}
                   className="bg-gray-50 rounded-lg p-2 text-center font-mono font-bold text-sm"
@@ -216,39 +237,43 @@ const LiveDraw = () => {
       )}
 
       {/* Draw History Toggle */}
-      <button
-        onClick={() => setShowHistory(!showHistory)}
-        className="w-full bg-white p-4 rounded-xl shadow-sm border border-blue-100 flex items-center justify-between"
-      >
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-            <History size={20} className="text-blue-600" />
-          </div>
-          <div className="text-left">
-            <h3 className="font-semibold">Draw History</h3>
-            <p className="text-xs text-gray-500">View previous 10 draws</p>
-          </div>
-        </div>
-        <ChevronRight 
-          size={20} 
-          className={`text-gray-400 transition-transform ${showHistory ? 'rotate-90' : ''}`} 
-        />
-      </button>
-
-      {/* Previous Draws */}
-      {showHistory && (
-        <div className="space-y-3">
-          {previousDraws.map((draw, index) => (
-            <DrawHistoryCard 
-              key={index}
-              draw={draw}
-              isSelected={selectedDraw === draw.draw_number}
-              onSelect={() => setSelectedDraw(
-                selectedDraw === draw.draw_number ? null : draw.draw_number
-              )}
+      {previousDraws.length > 1 && (
+        <>
+          <button
+            onClick={() => setShowHistory(!showHistory)}
+            className="w-full bg-white p-4 rounded-xl shadow-sm border border-blue-100 flex items-center justify-between"
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
+                <History size={20} className="text-blue-600" />
+              </div>
+              <div className="text-left">
+                <h3 className="font-semibold">Draw History</h3>
+                <p className="text-xs text-gray-500">View previous {previousDraws.length - 1} draws</p>
+              </div>
+            </div>
+            <ChevronRight 
+              size={20} 
+              className={`text-gray-400 transition-transform ${showHistory ? 'rotate-90' : ''}`} 
             />
-          ))}
-        </div>
+          </button>
+
+          {/* Previous Draws */}
+          {showHistory && (
+            <div className="space-y-3">
+              {previousDraws.slice(1).map((draw, index) => (
+                <DrawHistoryCard 
+                  key={index}
+                  draw={draw}
+                  isSelected={selectedDraw === draw.draw_number}
+                  onSelect={() => setSelectedDraw(
+                    selectedDraw === draw.draw_number ? null : draw.draw_number
+                  )}
+                />
+              ))}
+            </div>
+          )}
+        </>
       )}
 
       {/* Statistics Section */}
@@ -339,7 +364,7 @@ const DrawHistoryCard = ({ draw, isSelected, onSelect }) => {
           <div className="mb-3">
             <h4 className="text-xs font-semibold text-gray-500 mb-2">Starter Prizes</h4>
             <div className="grid grid-cols-5 gap-1">
-              {draw.starter_prizes.slice(0, 5).map((num, idx) => (
+              {draw.starter_prizes?.slice(0, 5).map((num, idx) => (
                 <span key={idx} className="text-xs font-mono bg-white p-1 rounded text-center">
                   {num}
                 </span>
@@ -349,7 +374,7 @@ const DrawHistoryCard = ({ draw, isSelected, onSelect }) => {
           <div>
             <h4 className="text-xs font-semibold text-gray-500 mb-2">Consolation Prizes</h4>
             <div className="grid grid-cols-5 gap-1">
-              {draw.consolation_prizes.slice(0, 5).map((num, idx) => (
+              {draw.consolation_prizes?.slice(0, 5).map((num, idx) => (
                 <span key={idx} className="text-xs font-mono bg-white p-1 rounded text-center">
                   {num}
                 </span>
