@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLocalData } from '../contexts/LocalDataContext';
-import { Plus, User, Phone, Calendar, Heart, Edit2, Trash2 } from 'lucide-react';
+import { Plus, User, Phone, Calendar, Heart, Edit2, Trash2, Home, MapPin } from 'lucide-react';
 
 const Profiles = () => {
   const navigate = useNavigate();
@@ -64,6 +64,7 @@ const AddProfileForm = ({ onClose }) => {
     name: '',
     birthDates: [''],
     phoneNumbers: [''],
+    addresses: [''],  // Changed from single address to multiple
     favoriteNumbers: ['']
   });
 
@@ -96,6 +97,7 @@ const AddProfileForm = ({ onClose }) => {
       name: formData.name || `Profile ${profiles.length + 1}`,
       birthDates: formData.birthDates.filter(bd => bd.trim()),
       phoneNumbers: formData.phoneNumbers.filter(pn => pn.trim()),
+      addresses: formData.addresses.filter(addr => addr.trim()),
       favoriteNumbers: formData.favoriteNumbers.filter(fn => fn.trim())
     };
     
@@ -111,7 +113,7 @@ const AddProfileForm = ({ onClose }) => {
   };
 
   return (
-    <div className="bg-white rounded-xl p-5 shadow-lg border border-blue-100">
+    <div className="bg-white rounded-xl p-5 shadow-lg border border-blue-100 max-h-[80vh] overflow-y-auto">
       <h2 className="text-lg font-semibold mb-4">Add New Profile</h2>
       
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -129,9 +131,9 @@ const AddProfileForm = ({ onClose }) => {
         </div>
 
         {/* Birth Dates */}
-        <div>
+        <div className="bg-blue-50 p-4 rounded-lg">
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Birth Dates (DD-MM-YYYY)
+            <Calendar size={16} className="inline mr-1" /> Birth Dates (DD-MM-YYYY)
           </label>
           {formData.birthDates.map((bd, index) => (
             <div key={index} className="flex gap-2 mb-2">
@@ -164,9 +166,9 @@ const AddProfileForm = ({ onClose }) => {
         </div>
 
         {/* Phone Numbers */}
-        <div>
+        <div className="bg-green-50 p-4 rounded-lg">
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Singapore Phone Numbers (8 digits)
+            <Phone size={16} className="inline mr-1" /> Singapore Phone Numbers (8 digits)
           </label>
           {formData.phoneNumbers.map((pn, index) => (
             <div key={index} className="flex gap-2 mb-2">
@@ -200,10 +202,46 @@ const AddProfileForm = ({ onClose }) => {
           <p className="text-xs text-gray-500 mt-1">We'll use first 4 and last 4 digits</p>
         </div>
 
-        {/* Favorite Numbers */}
-        <div>
+        {/* Addresses */}
+        <div className="bg-purple-50 p-4 rounded-lg">
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Favorite Numbers (Optional)
+            <Home size={16} className="inline mr-1" /> Home Addresses
+          </label>
+          <p className="text-xs text-gray-500 mb-2">Include house numbers and postal codes for number patterns</p>
+          {formData.addresses.map((addr, index) => (
+            <div key={index} className="flex gap-2 mb-2">
+              <input
+                type="text"
+                value={addr}
+                onChange={(e) => handleFieldChange('addresses', index, e.target.value)}
+                placeholder="Blk 123, #04-56, S123456"
+                className="flex-1 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              />
+              {formData.addresses.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => handleRemoveField('addresses', index)}
+                  className="p-3 text-red-500 hover:bg-red-50 rounded-lg"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => handleAddField('addresses')}
+            className="text-sm text-blue-600 flex items-center gap-1 mt-2"
+          >
+            <Plus size={16} /> Add another address
+          </button>
+          <p className="text-xs text-gray-500 mt-2">We'll extract numbers from: house numbers, floor numbers, unit numbers, postal codes</p>
+        </div>
+
+        {/* Favorite Numbers */}
+        <div className="bg-yellow-50 p-4 rounded-lg">
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            <Heart size={16} className="inline mr-1" /> Favorite Numbers (Optional)
           </label>
           <p className="text-xs text-gray-500 mb-2">Car plates, special dates, lucky numbers</p>
           {formData.favoriteNumbers.map((fn, index) => (
@@ -256,10 +294,19 @@ const AddProfileForm = ({ onClose }) => {
 };
 
 const ProfileCard = ({ profile, isActive, onSelect, onDelete, onEdit }) => {
-  // Count total numbers
+  // Count total numbers (including addresses which contain multiple number patterns)
   const totalNumbers = (profile.birthDates?.length || 0) + 
                       (profile.phoneNumbers?.length || 0) + 
+                      (profile.addresses?.length || 0) + 
                       (profile.favoriteNumbers?.length || 0);
+
+  // Extract number patterns from address for preview
+  const getAddressPreview = (address) => {
+    if (!address) return '';
+    // Extract numbers from address (house numbers, postal codes)
+    const numbers = address.match(/\d+/g);
+    return numbers ? numbers.join(', ') : 'No numbers found';
+  };
 
   return (
     <div 
@@ -307,6 +354,19 @@ const ProfileCard = ({ profile, isActive, onSelect, onDelete, onEdit }) => {
             </div>
           </div>
         )}
+
+        {profile.addresses?.length > 0 && (
+          <div className="flex items-start gap-2 text-gray-600">
+            <Home size={14} className="mt-1" />
+            <div className="flex-1">
+              {profile.addresses.map((addr, i) => (
+                <div key={i} className="text-xs">
+                  <span className="font-medium">Numbers:</span> {getAddressPreview(addr)}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
         
         {profile.favoriteNumbers?.length > 0 && (
           <div className="flex items-start gap-2 text-gray-600">
@@ -321,7 +381,7 @@ const ProfileCard = ({ profile, isActive, onSelect, onDelete, onEdit }) => {
       </div>
 
       <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
-        <span className="text-xs text-gray-500">{totalNumbers} personal numbers</span>
+        <span className="text-xs text-gray-500">{totalNumbers} personal entries</span>
         <span className={`text-xs font-medium px-3 py-1 rounded-full
           ${isActive ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
           {isActive ? 'Active Profile' : 'Click to activate'}
