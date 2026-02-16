@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLocalData } from '../contexts/LocalDataContext';
-import { Plus, User, Phone, Calendar, Heart, Edit2, Trash2, ChevronRight } from 'lucide-react';
+import { Plus, User, Phone, Calendar, Heart, Edit2, Trash2 } from 'lucide-react';
 
 const Profiles = () => {
   const navigate = useNavigate();
@@ -31,7 +31,10 @@ const Profiles = () => {
             key={profile.id}
             profile={profile}
             isActive={activeProfile?.id === profile.id}
-            onSelect={() => setActiveProfile(profile)}
+            onSelect={() => {
+              setActiveProfile(profile);
+              navigate('/dashboard');
+            }}
             onDelete={() => deleteProfile(profile.id)}
             onEdit={() => navigate(`/profile/edit/${profile.id}`)}
           />
@@ -55,7 +58,8 @@ const Profiles = () => {
 };
 
 const AddProfileForm = ({ onClose }) => {
-  const { addProfile } = useLocalData();
+  const navigate = useNavigate();
+  const { profiles, addProfile, setActiveProfile } = useLocalData();
   const [formData, setFormData] = useState({
     name: '',
     birthDates: [''],
@@ -95,7 +99,14 @@ const AddProfileForm = ({ onClose }) => {
       favoriteNumbers: formData.favoriteNumbers.filter(fn => fn.trim())
     };
     
-    addProfile(profileData);
+    const newProfile = addProfile(profileData);
+    
+    // Auto-select the profile if it's the first one
+    if (profiles.length === 0) {
+      setActiveProfile(newProfile);
+      navigate('/dashboard');
+    }
+    
     onClose();
   };
 
@@ -252,18 +263,19 @@ const ProfileCard = ({ profile, isActive, onSelect, onDelete, onEdit }) => {
 
   return (
     <div 
-      className={`bg-white rounded-xl p-4 shadow-sm border-2 transition-all
-        ${isActive ? 'border-blue-500 bg-blue-50' : 'border-blue-100'}`}
+      className={`bg-white rounded-xl p-4 shadow-sm border-2 transition-all cursor-pointer
+        ${isActive ? 'border-blue-500 bg-blue-50' : 'border-blue-100 hover:border-blue-300'}`}
+      onClick={onSelect}
     >
       <div className="flex justify-between items-start mb-3">
         <div className="flex items-center gap-2">
           <User size={20} className="text-blue-600" />
           <h3 className="font-semibold">{profile.name}</h3>
           {isActive && (
-            <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded-full">Active</span>
+            <span className="text-xs bg-green-600 text-white px-2 py-1 rounded-full">Active</span>
           )}
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2" onClick={(e) => e.stopPropagation()}>
           <button onClick={onEdit} className="p-1 text-gray-500 hover:text-blue-600">
             <Edit2 size={16} />
           </button>
@@ -310,15 +322,10 @@ const ProfileCard = ({ profile, isActive, onSelect, onDelete, onEdit }) => {
 
       <div className="flex items-center justify-between mt-4 pt-3 border-t border-gray-100">
         <span className="text-xs text-gray-500">{totalNumbers} personal numbers</span>
-        <button
-          onClick={onSelect}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-all
-            ${isActive 
-              ? 'bg-blue-600 text-white' 
-              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
-        >
-          {isActive ? 'Active' : 'Use This Profile'}
-        </button>
+        <span className={`text-xs font-medium px-3 py-1 rounded-full
+          ${isActive ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'}`}>
+          {isActive ? 'Active Profile' : 'Click to activate'}
+        </span>
       </div>
     </div>
   );
